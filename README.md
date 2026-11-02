@@ -96,7 +96,8 @@ sudo ./deploy.sh
 │   ├── build_db.py       编译解读数据库（行级去重 + 分块压缩）
 │   └── package.sh        打交付包
 ├── data/                 运行时挂载的解读库（.db 不进 git）
-├── deploy.sh             一键部署
+├── deploy.sh             首次部署 / 手动部署
+├── sync.sh               一条命令同步线上代码（拉取 + 判断 + 部署 + 失败回滚）
 ├── check-ai.sh           大模型连通性自检
 ├── start.sh / stop.sh / restart.sh / status.sh
 ├── docker-compose.yml

@@ -72,7 +72,7 @@ fi
 # 4. 端口占用检查
 # 更新时端口必然已被本服务自己的容器占用，不能误判成「冲突」。
 # 先看是不是我们自己的容器在监听这个端口，是就放行（后面会 recreate）。
-OWN=$(docker ps -q --filter "name=^/ziwei$" --filter "publish=${PORT}" 2>/dev/null || true)
+OWN=$(docker ps -q --filter "name=^/?ziwei$" --filter "publish=${PORT}" 2>/dev/null || true)
 if [ -z "$OWN" ] && ss -tlnp 2>/dev/null | grep -q ":${PORT} "; then
   die "端口 ${PORT} 已被其他程序占用，请修改 .env 里的 HOST_PORT"
 fi
