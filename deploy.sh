@@ -23,7 +23,14 @@ docker compose version >/dev/null 2>&1 || die "未安装 Docker Compose v2（doc
 ok "Docker $(docker --version | awk '{print $3}' | tr -d ,)"
 
 # 2. 数据检查
-[ -f data/interp.db ] || die "缺少 data/interp.db（解读数据库）。请确认压缩包已完整解压。"
+if [ ! -f data/interp.db ]; then
+  die "缺少 data/interp.db（解读数据库，662 MB）。
+    它不进 git 仓库，需要手动放到 data/ 一次：
+      • 有安装包：tar xzf ziwei-selfhost-1.0.0.tar.gz -C /tmp \\
+                  && cp /tmp/ziwei-selfhost-1.0.0/data/interp.db data/
+      • 有 Release 直链：curl -L -o data/interp.db '<直链>'
+      • 都没有：bash build/download.sh && python3 build/build_db.py"
+fi
 DBMB=$(( $(stat -c%s data/interp.db) / 1024 / 1024 ))
 ok "解读数据库 ${DBMB} MB"
 
@@ -63,8 +70,11 @@ else
 fi
 
 # 4. 端口占用检查
-if ss -tlnp 2>/dev/null | grep -q ":${PORT} "; then
-  die "端口 ${PORT} 已被占用，请修改 .env 里的 HOST_PORT"
+# 更新时端口必然已被本服务自己的容器占用，不能误判成「冲突」。
+# 先看是不是我们自己的容器在监听这个端口，是就放行（后面会 recreate）。
+OWN=$(docker ps -q --filter "name=^/ziwei$" --filter "publish=${PORT}" 2>/dev/null || true)
+if [ -z "$OWN" ] && ss -tlnp 2>/dev/null | grep -q ":${PORT} "; then
+  die "端口 ${PORT} 已被其他程序占用，请修改 .env 里的 HOST_PORT"
 fi
 
 # 5. 构建镜像

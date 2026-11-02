@@ -32,7 +32,7 @@ echo "复制部署文件…"
 # 保证「git 仓库」与「交付包」是同一套目录结构，不会出现两套布局漂移。
 cp ../docker-compose.yml ../.env.example ../DEPLOY.md "$OUT/"
 cp ../deploy.sh ../start.sh ../stop.sh \
-   ../restart.sh ../status.sh ../check-ai.sh "$OUT/"
+   ../restart.sh ../status.sh ../check-ai.sh ../sync.sh "$OUT/"
 
 cat > "$OUT/README.md" <<'EOF'
 # 紫微斗数自建站
