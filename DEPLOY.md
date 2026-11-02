@@ -113,6 +113,8 @@ sudo ./deploy.sh
 | 变量 | 说明 |
 |---|---|
 | `HOST_PORT` | 对外端口，默认 28763 |
+| `APT_MIRROR` | 构建期 Debian 源，默认 `mirrors.aliyun.com`。海外服务器可置空 |
+| `NPM_REGISTRY` | 构建期 npm 源，默认 `https://registry.npmmirror.com`。海外服务器可置空 |
 | `PACKYCODE_BASE_URL` | OpenAI 兼容端点，默认 `https://www.packyapi.com/v1` |
 | `PACKYCODE_API_KEY` | 令牌。**必须选支持第三方接入的分组** |
 | `PACKYCODE_MODEL` | 模型名，默认 `claude-sonnet-4-5` |
@@ -263,3 +265,54 @@ cd .. && rm -rf ziwei-selfhost-1.0.0
 ```
 
 数据库文件在 `data/` 里，删目录即一并删除。
+
+---
+
+## 十、国内构建加速
+
+`docker build` 要访问两个海外源，国内都极慢：
+
+| 阶段 | 源 | 不改的话 |
+|---|---|---|
+| `apt-get install python3 make g++` | `deb.debian.org` | 75 MB 能跑十几分钟，且**每阶段各跑一次** |
+| `npm ci` | `registry.npmjs.org` | 通常更久 |
+
+`.env` 里这两个变量会在构建时作为 build arg 传进 Dockerfile：
+
+```bash
+APT_MIRROR=mirrors.aliyun.com
+NPM_REGISTRY=https://registry.npmmirror.com
+```
+
+留空则走官方源。海外服务器保持空即可。
+
+**另外**：`node:22-bookworm-slim` 这个基础镜像本身也来自 Docker Hub，国内需要给
+Docker 守护进程配镜像加速，见下一节。
+
+### Docker Hub 拉不动怎么办
+
+`failed to do request: dial tcp ... i/o timeout` 或 `not found`：Docker Hub 被墙或
+解析被污染。配 `registry-mirrors`：
+
+```bash
+sudo tee /etc/docker/daemon.json > /dev/null <<'JSON'
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://docker.1ms.run"
+  ]
+}
+JSON
+sudo systemctl daemon-reload && sudo systemctl restart docker
+docker pull node:22-bookworm-slim
+```
+
+阿里云机器也可以用它自己的专属加速地址（控制台 → 容器镜像服务 → 镜像加速器）。
+注意公共镜像源这两年陆续关停，可用性会变，拉不动就换一个。
+
+如果镜像源全都不通，兜底是拉下来后打本地标签，让 `FROM` 直接复用本地镜像：
+
+```bash
+docker pull docker.m.daocloud.io/library/node:22-bookworm-slim
+docker tag docker.m.daocloud.io/library/node:22-bookworm-slim node:22-bookworm-slim
+```

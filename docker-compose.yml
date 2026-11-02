@@ -3,6 +3,10 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
+      args:
+        # 国内构建加速，留空则用官方源。在 .env 里设置。
+        APT_MIRROR: ${APT_MIRROR:-}
+        NPM_REGISTRY: ${NPM_REGISTRY:-}
     image: ziwei-selfhost:1.0.0
     container_name: ziwei
     restart: unless-stopped
