@@ -283,9 +283,15 @@ if [ -z "$OWN" ] && ss -tlnp | grep -q ":${PORT} "; then die ...; fi
   这样换服务器时不必再传 434 MB 的包，直接 `curl` 拉库即可。做法：
   GitHub 仓库页 → Releases → Draft a new release → 附上 `interp.db`。
 
-### 关于两个临时 token
+### 关于临时 token（已处置）
 
-推送用了用户提供的 classic PAT（`repo` scope），用完已删除本地临时文件，
-未写入 `.git/config`、未进入任何提交。**建议用完后到
-https://github.com/settings/tokens 删除该 token**，并改用 SSH 长期工作
-（`~/.ssh/id_rsa.pub` 加到 GitHub → `git remote set-url origin git@github.com:969682997/ziwei-doushu-selfhost.git`）。
+推送用的是临时 classic PAT（`repo` scope），未写入 `.git/config`、未进入任何提交。
+现已全部删除，仓库凭据改为 **SSH 密钥**：
+
+```
+origin  git@github.com:969682997/ziwei-doushu-selfhost.git
+```
+
+已验证：`ssh -T git@github.com` 返回 `Hi 969682997!`；
+用临时标签做过一次真实的写入→删除测试，确认写权限可用，远程引用已清理干净。
+以后推送不再依赖任何 token。
