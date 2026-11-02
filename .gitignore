@@ -1,0 +1,40 @@
+# ── 依赖与构建产物 ──
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# ── 解读数据库（662 MB，不进 git）──
+# 用 data/interp.db.sha256 记录「当前代码期望的是哪一版数据集」
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# ── 数据集编译中间产物 ──
+build/interp.db
+build/raw/
+build/dist/
+build/__pycache__/
+build/*.building
+
+# ── 打包产物 ──
+*.tar.gz
+*.zip
+
+# ── 密钥与本地配置：务必不要提交 ──
+.env
+.env.local
+.env.*.local
+
+# ── 编辑器 / 系统 ──
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# ── WorkBuddy 会话与记忆，与项目无关 ──
+.workbuddy/
+
+# ── 日志 ──
+*.log
+npm-debug.log*

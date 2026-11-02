@@ -1,0 +1,37 @@
+# 全仓库统一以 LF 检出。
+#
+# 原因：CRLF 的 shell 脚本在 Linux 上会因 shebang 变成 "#!/usr/bin/env bash\r"
+# 而报 no such file or directory；CRLF 的 Dockerfile 会让 FROM 指令失效；
+# CRLF 的 .env 会让 HOST_PORT 带上 \r 导致 compose 端口解析失败。
+# 这两行让 Windows 上编辑的文件在提交时就归一为 LF，从根上避免这类问题。
+
+* text=auto eol=lf
+
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.py    text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.js    text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.css   text eol=lf
+Dockerfile       text eol=lf
+.dockerignore    text eol=lf
+.env.example     text eol=lf
+.gitignore       text eol=lf
+.gitattributes   text eol=lf
+
+# 二进制：不做换行转换
+*.db      binary
+*.zst     binary
+*.tar.gz  binary
+*.zip     binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.webp    binary
+*.ico     binary
+*.woff    binary
+*.woff2   binary

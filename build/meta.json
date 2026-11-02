@@ -1,0 +1,28 @@
+{
+  "rows": 674976,
+  "lines": 996322,
+  "blocks": 10568,
+  "dims": [
+    "overview",
+    "personality",
+    "love",
+    "career",
+    "wealth",
+    "health",
+    "family",
+    "children",
+    "move",
+    "friends",
+    "home",
+    "spirit",
+    "parents"
+  ],
+  "block_size": 64,
+  "db_bytes": 694788096,
+  "years": [
+    1950,
+    2026
+  ],
+  "codec": "gzip-9",
+  "source": "github.com/Renhuai123/ziwei-doushu v4.0-13d"
+}
