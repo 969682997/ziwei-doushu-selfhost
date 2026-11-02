@@ -1,7 +1,7 @@
 # 紫微斗数自建站 · 交付记录
 
-> 最后更新：2026-11-02 09:57
-> 状态：**交付物已生成并通过端到端验证（端口 28763 + 提示词模块 + 部署健壮性加固）**
+> 最后更新：2026-11-02 10:40
+> 状态：**已收录为 Git 仓库（公开），交付包同步重打**
 
 ---
 
@@ -10,10 +10,13 @@
 **`ziwei-selfhost-1.0.0.tar.gz`**（434 MB）
 
 ```
-SHA256  9a81fcc7271e56de0aeca19883b963e8503f7dff9f25c7530c8de3370dec58bd
+SHA256  e749b18061952b8be1c2b82abefb6f754b3871480cfcc064c1d716070a51daa7
 ```
 
 默认对外端口 **28763**（容器内仍为 3000，不暴露）。
+
+> 已有 Git 仓库，日常更新走 `git pull` 即可，不必再传 434 MB 的包。
+> 见文末「八、Git 仓库」。
 
 这一版在上一版基础上补了部署健壮性，三处都是会导致「装不上」的硬伤：
 
@@ -172,3 +175,74 @@ sudo ./deploy.sh
 2. **流派对齐**：见上面「已知问题 1」，需要重跑数据编译并改回归测试。
 3. **13 维解读的翻页预取**：现在切维度是按需请求（单次 2 ms 左右，体感已无延迟），
    首屏一次拉满 13 维约 120 KB，可视情况改成预取。
+
+---
+
+## 八、Git 仓库
+
+已在本目录执行 `git init`（分支 `main`）并完成首次提交，**尚未关联远程仓库**。
+
+### 为什么不把 434 MB 的包直接放上去
+
+GitHub 单文件硬上限 100 MB，662 MB 的 `interp.db` 和 434 MB 的安装包都会推送失败。
+Git LFS 免费额度只有 1 GB 存储 + 1 GB/月流量，一次 clone 就吃掉 662 MB，多台机器即用尽。
+
+所以定下的分工是：
+
+| 内容 | 去向 | 体积 |
+|---|---|---|
+| 源码 + 部署脚本 + 编译脚本 | Git 仓库 | 4.0 MB / 152 个文件 |
+| `interp.db` | 不进仓库，用现有安装包铺设一次 | 662 MB |
+| 安装包 | 不进仓库（需要时手动传） | 434 MB |
+
+`data/interp.db.sha256` 会随仓库走，用来标记「当前代码期望的是哪一版数据集」。
+
+### 结构做了调整：根目录即部署目录
+
+原来部署文件在 `deploy/` 子目录，而安装包解压后是平铺的，两套布局不一致——
+`git clone` 出来的目录直接跑 `deploy.sh` 会找不到 `./data`。
+现已把 `docker-compose.yml`、`deploy.sh`、`check-ai.sh`、`start/stop/restart/status.sh`、
+`.env.example`、`DEPLOY.md` 全部移到根目录，`deploy/` 目录删除。
+
+**现在「git 仓库」与「安装包解压后的目录」结构完全一致**，同一份文档两边都适用。
+
+### 两个 Windows 特有的坑（已处理）
+
+1. **可执行位**：Windows 上 `git add` 会把脚本记成 `100644`，clone 到 Linux 后
+   `./deploy.sh` 报 Permission denied。已用
+   `git ls-files '*.sh' | xargs git update-index --chmod=+x` 全部改为 `100755`。
+   **以后新增脚本要记得同样处理**，否则服务器上跑不起来。
+2. **换行符**：已加 `.gitattributes`（`* text=auto eol=lf`），Windows 上编辑的文件
+   提交时归一为 LF，从根上避免上次那个 CRLF 事故复现。
+
+### 服务器上的用法
+
+首次：
+
+```bash
+git clone <仓库地址> ziwei && cd ziwei
+tar xzf /path/ziwei-selfhost-1.0.0.tar.gz -C /tmp
+cp /tmp/ziwei-selfhost-1.0.0/data/interp.db data/        # 只做一次
+cp .env.example .env && vi .env
+sudo ./deploy.sh
+```
+
+之后同步：
+
+```bash
+git pull && sudo ./deploy.sh
+```
+
+### 还未做的
+
+- **关联远程仓库并推送**：本机没装 `gh`，无法代为创建远程仓库。
+  需要你到 GitHub 建一个**空仓库**（不要勾选 README/gitignore），然后：
+
+```bash
+git remote add origin git@github.com:<你的账号>/<仓库名>.git
+git push -u origin main
+```
+
+- **可选：把 `interp.db` 传成 Release 资产**（公开仓库下载免认证）。
+  这样换服务器时不必再传 434 MB 的包，直接 `curl` 拉库即可。做法：
+  GitHub 仓库页 → Releases → Draft a new release → 附上 `interp.db`。
