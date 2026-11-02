@@ -31,7 +31,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 make g++ ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund ${NPM_REGISTRY:+--registry=$NPM_REGISTRY}
+# npm ci 是首选：严格按 lockfile 安装，结果可复现。
+# 但本项目的 lockfile 存在一处 peer 依赖解析不一致（picomatch 2.3.2 / 4.0.7），
+# npm ci 会报 EUSAGE 拒绝安装；而重新生成 lockfile 会把 next 16.3.8→16.4.3、
+# iztro 2.6.1→2.6.3 一并升级——iztro 是排盘引擎，改动它会让排出的盘与解读库不一致，
+# 不能草率升级。所以这里降级为 npm install：它同样以 lockfile 锁定版本，
+# 只修复内部嵌套，实测 iztro / next / react 版本均保持不变。
+RUN npm ci --no-audit --no-fund ${NPM_REGISTRY:+--registry=$NPM_REGISTRY} \
+    || npm install --no-audit --no-fund ${NPM_REGISTRY:+--registry=$NPM_REGISTRY}
 
 # ── 构建 ──
 FROM base AS builder
@@ -48,8 +55,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 make g++ ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund ${NPM_REGISTRY:+--registry=$NPM_REGISTRY} \
-    && npm cache clean --force
+# 同 deps 阶段：npm ci 优先，lockfile 不一致时降级 npm install。
+RUN set -eux; \
+    npm ci --omit=dev --no-audit --no-fund ${NPM_REGISTRY:+--registry=$NPM_REGISTRY} \
+      || npm install --omit=dev --no-audit --no-fund ${NPM_REGISTRY:+--registry=$NPM_REGISTRY}; \
+    npm cache clean --force
 
 # ── 运行 ──
 FROM base AS runner

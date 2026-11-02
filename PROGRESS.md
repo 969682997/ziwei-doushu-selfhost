@@ -295,3 +295,41 @@ origin  git@github.com:969682997/ziwei-doushu-selfhost.git
 已验证：`ssh -T git@github.com` 返回 `Hi 969682997!`；
 用临时标签做过一次真实的写入→删除测试，确认写权限可用，远程引用已清理干净。
 以后推送不再依赖任何 token。
+
+---
+
+## 十一、构建时 lockfile 不一致（已知问题）
+
+`npm ci` 在干净目录（只有 `package.json` + `package-lock.json`）下会报：
+
+```
+npm error Invalid: lock file's picomatch@2.3.2 does not satisfy picomatch@4.0.7
+npm error Missing: picomatch@2.3.2 from lock file
+```
+
+本地之所以没暴露，是因为 `node_modules/.package-lock.json` 把问题掩盖了——
+只有像 Docker 那样「只拷两个文件进空目录」才会触发。
+
+**尝试过的修法：**
+
+| 做法 | 结果 |
+|---|---|
+| `npm install --package-lock-only` | 报 `up to date`，不修 |
+| 删掉 lock 重新生成 | 能通过 `npm ci`，但把 `next 16.3.8→16.4.3`、`iztro 2.6.1→2.6.3`、`react 19.3.0→19.3.1` 一并升了 |
+
+**最终采用**：保留原 lockfile，Dockerfile 里改成
+
+```dockerfile
+RUN npm ci ... || npm install ...
+```
+
+`npm install` 同样以 lockfile 为准，只修复内部嵌套。实测版本保持不变
+（iztro 2.6.1 / next 16.3.8 / react 19.3.0 / better-sqlite3 11.10.0），
+且 `npm run build` 通过。
+
+**为什么不跟着升级**：`iztro` 是排盘引擎，改版本可能改变星曜亮度与宫位排布，
+而 662 MB 解读库是按旧版本引擎的口径生成的。升引擎不重建数据集，两者会对不上。
+要做这件事必须同时重跑 `build_db.py`，属于独立任务。
+
+**后续若要清理**：在干净目录执行 `rm package-lock.json && npm install`，
+然后重跑数据集编译与全部回归测试，确认排盘结果无差异后再提交新 lock。
