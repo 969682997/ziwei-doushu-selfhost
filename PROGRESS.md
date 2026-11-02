@@ -1,7 +1,7 @@
 # 紫微斗数自建站 · 交付记录
 
-> 最后更新：2026-11-02 10:40
-> 状态：**已收录为 Git 仓库（公开），交付包同步重打**
+> 最后更新：2026-11-02 10:52
+> 状态：**已收录为 Git 仓库（公开），线上更新收敛为 `./sync.sh` 一条命令**
 
 ---
 
@@ -10,7 +10,7 @@
 **`ziwei-selfhost-1.0.0.tar.gz`**（434 MB）
 
 ```
-SHA256  e749b18061952b8be1c2b82abefb6f754b3871480cfcc064c1d716070a51daa7
+SHA256  d080145b2652ac0a11526450306d5f844834e8dd49747e13fbcbb2585e90cd76
 ```
 
 默认对外端口 **28763**（容器内仍为 3000，不暴露）。
@@ -97,6 +97,8 @@ sudo ./deploy.sh
 |---|---|
 | `app/lib/server/interp-db.ts` | 查询层，含块 LRU(48) 与结果 LRU(600) |
 | `app/lib/server/prompt.ts` | 读盘提示词（解读顺序 / 引用规则 / 禁止项 / 输出格式），改风格只动这里 |
+| `sync.sh` | 一条命令同步线上代码：拉取 → 判断重建范围 → 部署 → 失败回滚 |
+| `check-ai.sh` | 大模型连通性自检，按 401/403/404/429 分支出诊断 |
 | `app/app/api/reading/route.ts` | `GET /api/reading?y=&m=&d=&h=&g=&dim=` 纯本地查表 |
 | `app/app/api/interpret/route.ts` | `POST /api/interpret` OpenAI 兼容 + SSE 流式，对接 PackyCode |
 | `app/app/api/health/route.ts` | 健康检查 |
@@ -227,10 +229,39 @@ cp .env.example .env && vi .env
 sudo ./deploy.sh
 ```
 
-之后同步：
+之后同步，**一条命令**：
 
 ```bash
-git pull && sudo ./deploy.sh
+./sync.sh
+```
+
+`sync.sh` 的逻辑（已实测五个分支）：
+
+| 场景 | 行为 |
+|---|---|
+| 远程无新提交 | 直接退出，不重启 |
+| 仅文档/脚本变化 | 拉代码，不重建也不重启 |
+| 仅 `docker-compose.yml` 变化 | 只 recreate 容器，不重建镜像 |
+| `app/` 有变化 | 重建镜像 → 重启 → 健康检查 |
+| 部署失败 | **自动 `git reset --hard` 回滚到上一个提交并重新部署** |
+| 工作区不干净 | 拒绝执行并提示 stash |
+| 非 git 目录 | 打印四步接管命令（不会动 `data/` 与 `.env`） |
+
+### 顺带修掉的一个致命 bug
+
+`deploy.sh` 原来的端口检查是：
+
+```bash
+if ss -tlnp | grep -q ":${PORT} "; then die "端口已被占用"; fi
+```
+
+**更新时端口必然被本服务自己的容器占用**，于是第二次执行 `deploy.sh` 必定 `die`。
+也就是说 `git pull && ./deploy.sh` 这条路根本走不通——首次能装，之后永远报端口冲突。
+已改为先查是不是自己的容器在监听：
+
+```bash
+OWN=$(docker ps -q --filter "name=^/?ziwei$" --filter "publish=${PORT}")
+if [ -z "$OWN" ] && ss -tlnp | grep -q ":${PORT} "; then die ...; fi
 ```
 
 ### 还未做的
