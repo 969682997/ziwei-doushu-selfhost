@@ -53,7 +53,7 @@ cp build/interp.db data/
 需要 Docker 20.10+ 与 Docker Compose v2，Ubuntu 22.04 / 24.04 x86_64 验证过。
 
 ```bash
-git clone <仓库地址> ziwei && cd ziwei
+git clone https://github.com/969682997/ziwei-doushu-selfhost.git ziwei && cd ziwei
 mkdir -p data && cp /path/to/interp.db data/     # 见上节，只做一次
 cp .env.example .env && vi .env                  # 填 PACKYCODE_API_KEY
 sudo ./deploy.sh

@@ -222,7 +222,7 @@ Git LFS 免费额度只有 1 GB 存储 + 1 GB/月流量，一次 clone 就吃掉
 首次：
 
 ```bash
-git clone <仓库地址> ziwei && cd ziwei
+git clone https://github.com/969682997/ziwei-doushu-selfhost.git ziwei && cd ziwei
 tar xzf /path/ziwei-selfhost-1.0.0.tar.gz -C /tmp
 cp /tmp/ziwei-selfhost-1.0.0/data/interp.db data/        # 只做一次
 cp .env.example .env && vi .env
@@ -264,16 +264,28 @@ OWN=$(docker ps -q --filter "name=^/?ziwei$" --filter "publish=${PORT}")
 if [ -z "$OWN" ] && ss -tlnp | grep -q ":${PORT} "; then die ...; fi
 ```
 
-### 还未做的
+### 已完成
 
-- **关联远程仓库并推送**：本机没装 `gh`，无法代为创建远程仓库。
-  需要你到 GitHub 建一个**空仓库**（不要勾选 README/gitignore），然后：
+**已推送到** https://github.com/969682997/ziwei-doushu-selfhost （公开）
 
-```bash
-git remote add origin git@github.com:<你的账号>/<仓库名>.git
-git push -u origin main
-```
+推送后核验：
 
-- **可选：把 `interp.db` 传成 Release 资产**（公开仓库下载免认证）。
+| 项 | 结果 |
+|---|---|
+| 远程 HEAD 与本地 | 一致（`fa9cb86`） |
+| 9 个脚本权限位 | 全部 `100755`（在 GitHub 上是可执行的） |
+| 仓库体积 | 4 MB |
+| 历史中的密钥 | 无 |
+
+### 可选
+
+- **把 `interp.db` 传成 Release 资产**（公开仓库下载免认证）。
   这样换服务器时不必再传 434 MB 的包，直接 `curl` 拉库即可。做法：
   GitHub 仓库页 → Releases → Draft a new release → 附上 `interp.db`。
+
+### 关于两个临时 token
+
+推送用了用户提供的 classic PAT（`repo` scope），用完已删除本地临时文件，
+未写入 `.git/config`、未进入任何提交。**建议用完后到
+https://github.com/settings/tokens 删除该 token**，并改用 SSH 长期工作
+（`~/.ssh/id_rsa.pub` 加到 GitHub → `git remote set-url origin git@github.com:969682997/ziwei-doushu-selfhost.git`）。
