@@ -7,6 +7,8 @@ services:
         # 国内构建加速，留空则用官方源。在 .env 里设置。
         APT_MIRROR: ${APT_MIRROR:-}
         NPM_REGISTRY: ${NPM_REGISTRY:-}
+        # 小内存机器限制构建期 Node 堆上限，留空用默认值
+        BUILD_NODE_OPTIONS: ${BUILD_NODE_OPTIONS:-}
     image: ziwei-selfhost:1.0.0
     container_name: ziwei
     restart: unless-stopped

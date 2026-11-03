@@ -42,6 +42,11 @@ RUN npm ci --no-audit --no-fund ${NPM_REGISTRY:+--registry=$NPM_REGISTRY} \
 
 # ── 构建 ──
 FROM base AS builder
+# 小内存机器（≤2 GB）上 next build 容易被 OOM 杀掉。可通过 .env 里的
+# BUILD_NODE_OPTIONS 限制 V8 堆上限，例如 --max-old-space-size=1024。
+# 留空则用 Node 默认值。
+ARG BUILD_NODE_OPTIONS=
+ENV NODE_OPTIONS=${BUILD_NODE_OPTIONS}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
